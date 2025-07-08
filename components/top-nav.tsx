@@ -65,10 +65,10 @@ export function TopNav() {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/settings">Profile</Link>
+                <Link href="/dash/settings">Profile</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/settings">Settings</Link>
+                <Link href="/dash/settings">Settings</Link>
               </DropdownMenuItem>
               <DropdownMenuItem>Log out</DropdownMenuItem>
             </DropdownMenuContent>

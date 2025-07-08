@@ -7,14 +7,16 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Package, Plane, Ship, Warehouse } from "lucide-react"
+import { Package, Plane, Ship, Warehouse, Truck } from "lucide-react"
 import { db } from "@/lib/firebase"
-import { collection, addDoc, serverTimestamp } from "firebase/firestore"
+import { collection, addDoc, serverTimestamp, setDoc, doc } from "firebase/firestore"
 
 const initialFormData = {
   senderName: "",
   receiverName: "",
-  origin: "",
+  mode: "", 
+  origin: "", 
+  destination: "", 
   weight: "",
   numberOfPieces: "",
   dimensions: {
@@ -24,6 +26,8 @@ const initialFormData = {
   },
   description: "",
   carrierName: "",
+  arrivalDate: "", 
+  departureDate: "", 
 }
 
 export default function AddEntryForm() {
@@ -52,12 +56,20 @@ export default function AddEntryForm() {
     e.preventDefault()
     setIsSubmitting(true)
 
+    // Generate a unique 6-digit number
+    const generateUniqueId = () => {
+      return Math.floor(100000 + Math.random() * 900000).toString()
+    }
+    const docId = `Proc-${generateUniqueId()}`
+
     try {
       // Prepare data for Firestore
       const dataToSend = {
         senderName: formData.senderName,
         receiverName: formData.receiverName,
-        origin: formData.origin,
+        mode: formData.mode, // changed from origin
+        origin: formData.origin, // new field
+        destination: formData.destination, // new field
         weight: parseFloat(formData.weight),
         pieces: parseInt(formData.numberOfPieces, 10),
         dimensions: {
@@ -67,9 +79,11 @@ export default function AddEntryForm() {
         },
         description: formData.description,
         carrierName: formData.carrierName,
+        arrivalDate: formData.arrivalDate,
+        departureDate: formData.departureDate,
         timestamp: serverTimestamp(),
       }
-      await addDoc(collection(db, "shipments"), dataToSend)
+      await setDoc(doc(collection(db, "shipments"), docId), dataToSend)
       alert("Entry added successfully!")
       setFormData(initialFormData)
     } catch (error) {
@@ -78,12 +92,14 @@ export default function AddEntryForm() {
     setIsSubmitting(false)
   }
 
-  const getOriginIcon = (origin) => {
-    switch (origin) {
+  const getModeIcon = (mode) => {
+    switch (mode) {
       case "Air":
         return <Plane className="w-4 h-4" />
       case "Sea":
         return <Ship className="w-4 h-4" />
+      case "Road":
+        return <Truck className="w-4 h-4" />
       case "Local Storage":
         return <Warehouse className="w-4 h-4" />
       default:
@@ -134,19 +150,19 @@ export default function AddEntryForm() {
               </div>
             </div>
 
-            {/* Origin and Carrier */}
+            {/* Mode of Transport and Carrier */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="origin" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Origin of Goods *
+                <Label htmlFor="mode" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Mode of Transport *
                 </Label>
-                <Select value={formData.origin} onValueChange={(value) => handleInputChange("origin", value)}>
+                <Select value={formData.mode} onValueChange={(value) => handleInputChange("mode", value)}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select origin">
-                      {formData.origin && (
+                    <SelectValue placeholder="Select mode">
+                      {formData.mode && (
                         <div className="flex items-center gap-2">
-                          {getOriginIcon(formData.origin)}
-                          <span>{formData.origin}</span>
+                          {getModeIcon(formData.mode)}
+                          <span>{formData.mode}</span>
                         </div>
                       )}
                     </SelectValue>
@@ -162,6 +178,12 @@ export default function AddEntryForm() {
                       <div className="flex items-center gap-2">
                         <Ship className="w-4 h-4" />
                         <span>Sea</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Road">
+                      <div className="flex items-center gap-2">
+                        <Truck className="w-4 h-4" />
+                        <span>Road</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="Local Storage">
@@ -187,6 +209,66 @@ export default function AddEntryForm() {
                   className="w-full"
                 />
               </div>
+            </div>
+
+            {/* Origin and Destination Cities */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="origin" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Origin City *
+                </Label>
+                <Input
+                  id="origin"
+                  type="text"
+                  value={formData.origin}
+                  onChange={(e) => handleInputChange("origin", e.target.value)}
+                  placeholder="Enter origin city"
+                  required
+                  className="w-full"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="destination" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Destination City *
+                </Label>
+                <Input
+                  id="destination"
+                  type="text"
+                  value={formData.destination}
+                  onChange={(e) => handleInputChange("destination", e.target.value)}
+                  placeholder="Enter destination city"
+                  required
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            {/* Arrival Date */}
+            <div className="space-y-2">
+              <Label htmlFor="arrivalDate" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Date of Arrival *
+              </Label>
+              <Input
+                id="arrivalDate"
+                type="date"
+                value={formData.arrivalDate}
+                onChange={(e) => handleInputChange("arrivalDate", e.target.value)}
+                required
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="departureDate" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Date of Departure 
+              </Label>
+              <Input
+                id="departureDate"
+                type="date"
+                value={formData.departureDate}
+                onChange={(e) => handleInputChange("departureDate", e.target.value)}
+                
+                className="w-full"
+              />
             </div>
 
             {/* Weight and Number of Pieces */}
@@ -287,7 +369,7 @@ export default function AddEntryForm() {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-8 py-2 bg-zinc-900 dark:bg-zinc-50 text-zinc-50 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
+                className="px-8 py-2 bg-[#0071a9]  text-zinc-50  hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
               >
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">
@@ -295,7 +377,7 @@ export default function AddEntryForm() {
                     Adding Entry...
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 ">
                     <Package className="w-4 h-4" />
                     Add Entry
                   </div>

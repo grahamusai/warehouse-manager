@@ -23,10 +23,10 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
- { name: "Add Entry", href: "/add-entry", icon: CirclePlus },
- { name: "Inventory", href: "/inventory", icon: Package },
- { name: "Reports", href: "/reports", icon: ChartColumnBig },
-  { name: "Transactions", href: "/transactions", icon: Wallet },
+ { name: "Add Entry", href: "/dash/add-entry", icon: CirclePlus },
+ { name: "Inventory", href: "/dash/inventory", icon: Package },
+ { name: "Reports", href: "/dash/reports", icon: ChartColumnBig },
+  // { name: "Transactions", href: "/transactions", icon: Wallet },
  
 ]
 

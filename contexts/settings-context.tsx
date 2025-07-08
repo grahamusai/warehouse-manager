@@ -1,6 +1,9 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState } from "react"
+import { getAuth, onAuthStateChanged } from "firebase/auth"
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 
 export interface UserSettings {
   avatar: string
@@ -74,38 +77,60 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined)
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const [settings, setSettings] = useState<UserSettings>(() => {
-    // Try to load settings from localStorage during initialization
-    if (typeof window !== "undefined") {
-      const savedSettings = localStorage.getItem("userSettings")
-      if (savedSettings) {
-        return JSON.parse(savedSettings)
-      }
-    }
-    return defaultSettings
-  })
+  const [settings, setSettings] = useState<UserSettings | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
 
-  // Save settings to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem("userSettings", JSON.stringify(settings))
-  }, [settings])
+    const auth = getAuth()
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setUserId(user.uid)
+        // Try to load settings from Firestore
+        const settingsRef = doc(db, "users", user.uid, "settings", "profile")
+        const docSnap = await getDoc(settingsRef)
+        if (docSnap.exists()) {
+          setSettings(docSnap.data() as UserSettings)
+        } else {
+          // If no settings, use defaults and create in Firestore
+          await setDoc(settingsRef, defaultSettings)
+          setSettings(defaultSettings)
+        }
+      } else {
+        setUserId(null)
+        setSettings(defaultSettings)
+      }
+      setLoading(false)
+    })
+    return () => unsubscribe()
+  }, [])
+
+  // Save settings to Firestore whenever they change (if user is logged in)
+  useEffect(() => {
+    if (userId && settings) {
+      const settingsRef = doc(db, "users", userId, "settings", "profile")
+      setDoc(settingsRef, settings, { merge: true })
+    }
+  }, [settings, userId])
 
   const updateSettings = (newSettings: Partial<UserSettings>) => {
-    setSettings((prev) => ({ ...prev, ...newSettings }))
+    setSettings((prev) => prev ? { ...prev, ...newSettings } : defaultSettings)
   }
 
   const updateNotificationSettings = (notificationSettings: Partial<UserSettings["notifications"]>) => {
-    setSettings((prev) => ({
-      ...prev,
-      notifications: { ...prev.notifications, ...notificationSettings },
-    }))
+    setSettings((prev) =>
+      prev ? { ...prev, notifications: { ...prev.notifications, ...notificationSettings } } : defaultSettings
+    )
   }
 
   const updatePrivacySettings = (privacySettings: Partial<UserSettings["privacy"]>) => {
-    setSettings((prev) => ({
-      ...prev,
-      privacy: { ...prev.privacy, ...privacySettings },
-    }))
+    setSettings((prev) =>
+      prev ? { ...prev, privacy: { ...prev.privacy, ...privacySettings } } : defaultSettings
+    )
+  }
+
+  if (loading || !settings) {
+    return <div className="min-h-screen flex items-center justify-center">Loading user settings...</div>
   }
 
   return (
