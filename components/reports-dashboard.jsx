@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { db } from "@/lib/firebase"
+import { collection, getDocs } from "firebase/firestore"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -29,14 +31,14 @@ import {
   BarChart3,
   PieChartIcon,
   Activity,
+  AlertCircle,
 } from "lucide-react"
 import {
-  reportMetrics,
-  originDistribution,
   monthlyTrends,
+  originDistribution,
   statusDistribution,
-  carrierPerformance,
   topDestinations,
+  carrierPerformance,
 } from "@/lib/reports-data"
 
 const iconMap = {
@@ -49,9 +51,111 @@ const iconMap = {
 export default function ReportsDashboard() {
   const [dateRange, setDateRange] = useState("last-30-days")
   const [reportType, setReportType] = useState("overview")
+  const [debugInfo, setDebugInfo] = useState(null)
+
+  // Live stats state
+  const [liveMetrics, setLiveMetrics] = useState({
+    totalEntries: 0,
+    totalWeight: 0,
+    deliveredOrders: 0,
+    avgDeliveryTime: 0,
+    loading: true,
+    error: null,
+  })
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        setLiveMetrics((m) => ({ ...m, loading: true, error: null }))
+        
+        console.log("Fetching from 'shipments' collection...")
+        const querySnapshot = await getDocs(collection(db, "shipments"))
+        
+        console.log("Query snapshot size:", querySnapshot.size)
+        
+        let totalEntries = 0
+        let totalWeight = 0
+        let deliveredOrders = 0
+        let deliveryTimeSum = 0
+        let deliveryTimeCount = 0
+        let allDocuments = []
+        
+        querySnapshot.forEach((doc) => {
+          const data = doc.data()
+          console.log("Document ID:", doc.id, "Data:", data)
+          
+          allDocuments.push({
+            id: doc.id,
+            ...data
+          })
+          
+          totalEntries++
+          
+          // Check for weight field (could be 'weight', 'totalWeight', etc.)
+          const weight = data.weight || data.totalWeight || data.Weight || 0
+          if (typeof weight === "number" && weight > 0) {
+            totalWeight += weight
+          } else if (typeof weight === "string") {
+            const parsedWeight = parseFloat(weight)
+            if (!isNaN(parsedWeight)) {
+              totalWeight += parsedWeight
+            }
+          }
+          
+          // Check for status field (could be 'status', 'Status', etc.)
+          const status = data.status || data.Status || data.shipmentStatus || ""
+          if (status.toLowerCase().includes("delivered")) {
+            deliveredOrders++
+          }
+          
+          // Check for delivery time
+          const deliveryTime = data.deliveryTime || data.deliveryDays || data.estimatedDeliveryTime || 0
+          if (typeof deliveryTime === "number" && deliveryTime > 0) {
+            deliveryTimeSum += deliveryTime
+            deliveryTimeCount++
+          }
+        })
+        
+        setDebugInfo({
+          totalDocuments: querySnapshot.size,
+          documents: allDocuments,
+          fieldsFound: {
+            weightFields: allDocuments.map(doc => Object.keys(doc).filter(key => key.toLowerCase().includes('weight'))).flat(),
+            statusFields: allDocuments.map(doc => Object.keys(doc).filter(key => key.toLowerCase().includes('status'))).flat(),
+            deliveryFields: allDocuments.map(doc => Object.keys(doc).filter(key => key.toLowerCase().includes('delivery'))).flat(),
+          }
+        })
+        
+        setLiveMetrics({
+          totalEntries,
+          totalWeight,
+          deliveredOrders,
+          avgDeliveryTime: deliveryTimeCount ? (deliveryTimeSum / deliveryTimeCount) : 0,
+          loading: false,
+          error: null,
+        })
+        
+        console.log("Final metrics:", {
+          totalEntries,
+          totalWeight,
+          deliveredOrders,
+          avgDeliveryTime: deliveryTimeCount ? (deliveryTimeSum / deliveryTimeCount) : 0,
+        })
+        
+      } catch (error) {
+        console.error("Error fetching stats:", error)
+        setLiveMetrics(prev => ({
+          ...prev,
+          loading: false,
+          error: error.message,
+        }))
+      }
+    }
+    
+    fetchStats()
+  }, [])
 
   const handleExportReport = () => {
-    // In a real app, this would generate and download a report
     console.log("Exporting report...")
     alert("Report export functionality would be implemented here!")
   }
@@ -91,8 +195,101 @@ export default function ReportsDashboard() {
     )
   }
 
+  // Replace static reportMetrics with liveMetrics
+  const reportMetrics = [
+    {
+      label: "Total Entries",
+      value: liveMetrics.loading ? "Loading..." : liveMetrics.error ? "Error" : liveMetrics.totalEntries,
+      change: 0,
+      changeType: "neutral",
+      icon: "package",
+    },
+    {
+      label: "Total Weight (kg)",
+      value: liveMetrics.loading ? "Loading..." : liveMetrics.error ? "Error" : liveMetrics.totalWeight.toLocaleString(),
+      change: 0,
+      changeType: "neutral",
+      icon: "weight",
+    },
+    {
+      label: "Delivered Orders",
+      value: liveMetrics.loading ? "Loading..." : liveMetrics.error ? "Error" : liveMetrics.deliveredOrders,
+      change: 0,
+      changeType: "neutral",
+      icon: "truck",
+    },
+    {
+      label: "Average Delivery Time",
+      value: liveMetrics.loading ? "Loading..." : liveMetrics.error ? "Error" : `${liveMetrics.avgDeliveryTime.toFixed(1)} days`,
+      change: 0,
+      changeType: "neutral",
+      icon: "clock",
+    },
+  ]
+
   return (
     <div className="space-y-6">
+      {/* Debug Info Card */}
+      {/* {debugInfo && (
+        <Card className="border-blue-200 bg-blue-50 dark:bg-blue-900/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-800 dark:text-blue-400">
+              <AlertCircle className="w-4 h-4" />
+              Debug Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium">Total Documents Found: {debugInfo.totalDocuments}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Expected: 3 (Proc-839926, Proc-422245, Proc-147142)
+                </p>
+              </div>
+              
+              {debugInfo.documents.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium mb-2">Document Structure:</p>
+                  <pre className="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto">
+                    {JSON.stringify(debugInfo.documents, null, 2)}
+                  </pre>
+                </div>
+              )}
+              
+              <div>
+                <p className="text-sm font-medium mb-2">Fields Found:</p>
+                <div className="grid grid-cols-3 gap-4 text-xs">
+                  <div>
+                    <p className="font-medium">Weight Fields:</p>
+                    <p>{debugInfo.fieldsFound.weightFields.join(", ") || "None"}</p>
+                  </div>
+                  <div>
+                    <p className="font-medium">Status Fields:</p>
+                    <p>{debugInfo.fieldsFound.statusFields.join(", ") || "None"}</p>
+                  </div>
+                  <div>
+                    <p className="font-medium">Delivery Fields:</p>
+                    <p>{debugInfo.fieldsFound.deliveryFields.join(", ") || "None"}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )} */}
+
+      {/* Error Display */}
+      {liveMetrics.error && (
+        <Card className="border-red-200 bg-red-50 dark:bg-red-900/10">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-red-800 dark:text-red-400">
+              <AlertCircle className="w-4 h-4" />
+              <p className="text-sm font-medium">Error loading data: {liveMetrics.error}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -236,7 +433,7 @@ export default function ReportsDashboard() {
         </Card>
       </div>
 
-      {/* Charts Row 2 */}
+      {/* Rest of the dashboard remains the same */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Status Distribution */}
         <Card>
@@ -333,7 +530,6 @@ export default function ReportsDashboard() {
                   <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Total Shipments</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">On-Time Delivery</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Avg. Delivery Time</th>
-                  {/* <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Rating</th> */}
                 </tr>
               </thead>
               <tbody>
@@ -355,12 +551,6 @@ export default function ReportsDashboard() {
                       </span>
                     </td>
                     <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{carrier.averageDeliveryTime} days</td>
-                    {/* <td className="py-3 px-4">
-                      <div className="flex items-center gap-1">
-                        <span className="text-yellow-400">★</span>
-                        <span className="text-gray-900 dark:text-white font-medium">{carrier.rating}</span>
-                      </div>
-                    </td> */}
                   </tr>
                 ))}
               </tbody>

@@ -9,44 +9,14 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 const notifications = [
   {
     id: 1,
-    title: "New Feature",
-    message: "Check out our new budget tracking tool!",
-    date: "2023-07-15",
+    title: "Contact Graham",
+    message: "If you need any help feel free to contact Graham.",
+    date: "2025-07-09",
     icon: Info,
     color: "text-blue-500",
   },
-  {
-    id: 2,
-    title: "Account Alert",
-    message: "Unusual activity detected on your account.",
-    date: "2023-07-14",
-    icon: AlertTriangle,
-    color: "text-yellow-500",
-  },
-  {
-    id: 3,
-    title: "Payment Due",
-    message: "Your credit card payment is due in 3 days.",
-    date: "2023-07-13",
-    icon: CreditCard,
-    color: "text-red-500",
-  },
-  {
-    id: 4,
-    title: "Investment Update",
-    message: "Your investment portfolio has grown by 5% this month.",
-    date: "2023-07-12",
-    icon: TrendingUp,
-    color: "text-green-500",
-  },
-  {
-    id: 5,
-    title: "New Offer",
-    message: "You're eligible for a new savings account with higher interest!",
-    date: "2023-07-11",
-    icon: Gift,
-    color: "text-purple-500",
-  },
+  
+  
 ]
 
 export function Notifications() {

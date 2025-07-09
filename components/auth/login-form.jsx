@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Eye, EyeOff, Lock, Mail, AlertCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth"
+import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, setPersistence, browserLocalPersistence, browserSessionPersistence } from "firebase/auth"
 import firebaseApp from "@/lib/firebase"
 
 const GoogleIcon = () => (
@@ -74,6 +74,8 @@ export default function LoginForm() {
     }
 
     try {
+      // Set Firebase Auth persistence based on Remember Me
+      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence)
       // Firebase email/password login
       await signInWithEmailAndPassword(auth, formData.email, formData.password)
       if (rememberMe) {
@@ -89,15 +91,21 @@ export default function LoginForm() {
     }
   }
 
-
   const handleGoogleLogin = async () => {
     setIsLoading(true)
     setError("")
     try {
+      // Set Firebase Auth persistence to match Remember Me
+      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence)
       // Firebase Google login
       await signInWithPopup(auth, googleProvider)
-      sessionStorage.setItem("warehouse_auth", "true")
-      sessionStorage.setItem("auth_method", "google")
+      if (rememberMe) {
+        localStorage.setItem("warehouse_auth", "true")
+        localStorage.setItem("auth_method", "google")
+      } else {
+        sessionStorage.setItem("warehouse_auth", "true")
+        sessionStorage.setItem("auth_method", "google")
+      }
       router.push("/dash")
     } catch (err) {
       setError("Google login failed. Please try again.")
