@@ -230,7 +230,7 @@ export default function ReportsDashboard() {
   return (
     <div className="space-y-6">
       {/* Debug Info Card */}
-      {/* {debugInfo && (
+      {debugInfo && (
         <Card className="border-blue-200 bg-blue-50 dark:bg-blue-900/10">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-blue-800 dark:text-blue-400">
@@ -276,7 +276,7 @@ export default function ReportsDashboard() {
             </div>
           </CardContent>
         </Card>
-      )} */}
+      )}
 
       {/* Error Display */}
       {liveMetrics.error && (

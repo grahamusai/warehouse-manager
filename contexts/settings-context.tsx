@@ -130,7 +130,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   }
 
   if (loading || !settings) {
-    return <div className="min-h-screen flex items-center justify-center">Loading user settings...</div>
+    return <div className="min-h-screen flex items-center justify-center">Loading</div>
   }
 
   return (
