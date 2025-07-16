@@ -222,16 +222,15 @@ export default function EntryDetailsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Header */}
+      <div className="flex items-center justify-between mb-20">
+      <img src="/images/logo.png" alt="" />
+
+      </div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">
-          <Link href="/dash/inventory">
-            <Button variant="outline" size="sm">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Entries
-            </Button>
-          </Link>
+          
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Entry Details</h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">Document ID: {entry.id}</p>
@@ -257,10 +256,7 @@ export default function EntryDetailsPage() {
             <Share className="w-4 h-4 mr-2" />
             {shareCopied ? "Copied!" : "Share"}
           </Button>
-          <Button size="sm" className="bg-zinc-900 dark:bg-zinc-50 text-zinc-50 dark:text-zinc-900">
-            <Edit className="w-4 h-4 mr-2" />
-            Edit Entry
-          </Button>
+          
         </div>
       </div>
 

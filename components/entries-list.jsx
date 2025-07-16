@@ -946,7 +946,7 @@ export default function EntriesList() {
                               variant="ghost"
                               size="icon"
                               aria-label="View"
-                              onClick={() => router.push(`/dash/${entry.id}`)}
+                              onClick={() => router.push(`/${entry.id}`)}
                             >
                               <Eye className="w-5 h-5" />
                             </Button>
