@@ -64,6 +64,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { useRouter } from "next/navigation";
 
 const statusColors = {
   Pending:
@@ -99,6 +100,7 @@ export default function EntriesList() {
   const [saving, setSaving] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [entryToView, setEntryToView] = useState(null);
+  const router = useRouter();
 
   // Function to fetch images from Firebase Storage
   const fetchImagesForEntry = async (entryId) => {
@@ -314,11 +316,6 @@ export default function EntriesList() {
       alert("Failed to update entry.");
     }
     setSaving(false);
-  };
-
-  const handleViewClick = (entry) => {
-    setEntryToView(entry);
-    setViewModalOpen(true);
   };
 
   const formatDimensions = (dimensions) => {
@@ -933,14 +930,6 @@ export default function EntriesList() {
                               variant="ghost"
                               size="sm"
                               className="h-8 w-8 p-0"
-                              onClick={() => handleViewClick(entry)}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0"
                               onClick={() => handleEditClick(entry)}
                             >
                               <Edit className="w-4 h-4" />
@@ -952,6 +941,14 @@ export default function EntriesList() {
                               onClick={() => handleDeleteClick(entry)}
                             >
                               <Trash2 className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="View"
+                              onClick={() => router.push(`/dash/${entry.id}`)}
+                            >
+                              <Eye className="w-5 h-5" />
                             </Button>
                           </div>
                         </TableCell>
